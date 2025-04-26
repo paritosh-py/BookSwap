@@ -1,0 +1,189 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+include 'db.php';
+$user_id = $_SESSION['user_id'];
+
+// Fetch requests where the logged-in user is the owner of the book
+$sql = "SELECT requests.id, books.book_name, users.name AS requester_name, users.email AS requester_email, requests.status 
+        FROM requests 
+        INNER JOIN books ON requests.book_id = books.id 
+        INNER JOIN users ON requests.requester_id = users.id 
+        WHERE books.user_id = '$user_id'";
+$result = $conn->query($sql);
+
+$requestDetails = null;
+
+// Handle Approve Action
+if (isset($_POST['approve'])) {
+    $request_id = $_POST['approve'];
+    $requester_name = $_POST['requester_name'];
+    $requester_email = $_POST['requester_email'];
+
+    $sql = "UPDATE requests SET status = 'Approved' WHERE id = '$request_id'";
+    if ($conn->query($sql)) {
+        $requestDetails = [
+            "name" => $requester_name,
+            "email" => $requester_email,
+        ];
+    } else {
+        echo "<p>Error: " . $conn->error . "</p>";
+    }
+}
+
+// Handle Reject Action
+if (isset($_POST['reject'])) {
+    $request_id = $_POST['reject'];
+    $sql = "UPDATE requests SET status = 'Rejected' WHERE id = '$request_id'";
+    if (!$conn->query($sql)) {
+        echo "<p>Error: " . $conn->error . "</p>";
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Requests</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background-color: #1c1c1c;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: #333333;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+
+        .navbar a:hover {
+            background-color: #f4a261;
+            color: black;
+        }
+
+        .content {
+            background-color: rgb(72, 67, 62);
+            padding: 2rem;
+            margin: 2rem auto;
+            border-radius: 10px;
+            max-width: 80%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .content h2 {
+            color: #f4a261;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .content div {
+            padding: 1rem;
+            margin: 1rem 0;
+            background-color: #333333;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .content div h3 {
+            color: #f4a261;
+        }
+
+        .content p {
+            margin: 0.5rem 0;
+        }
+
+        .content button {
+            background-color: #f4a261;
+            color: black;
+            padding: 0.5rem 1.5rem;
+            margin: 0.5rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .content button:hover {
+            background-color: #e57a2e;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #444444;
+            margin: 1rem 0;
+        }
+    </style>
+    <script>
+        // JavaScript function to show the popup
+        function showPopup(name, email) {
+            alert(`Request Approved!\nRequester Name: ${name}\nRequester Email: ${email}`);
+        }
+    </script>
+</head>
+<body>
+    <div class="navbar">
+        <a href="home.php">Home</a>
+        <a href="add_books.php">Add Books</a>
+        <a href="requests.php">Your Requests</a>
+        <a href="requests_status.php">Request Status</a>
+        <a href="profile.php">Personal Details</a>
+        <a href="logout.php">Logout</a>
+    </div>
+    <div class="content">
+        <h2>Your Book Requests</h2>
+        <?php
+        if ($result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                echo "<div>";
+                echo "<h3>" . htmlspecialchars($row['book_name']) . "</h3>";
+                echo "<p>Requester: " . htmlspecialchars($row['requester_name']) . "</p>";
+                echo "<p>Status: " . htmlspecialchars($row['status']) . "</p>";
+                echo "<form method='POST' action=''>
+                        <input type='hidden' name='requester_name' value='" . htmlspecialchars($row['requester_name']) . "'>
+                        <input type='hidden' name='requester_email' value='" . htmlspecialchars($row['requester_email']) . "'>
+                        <button type='submit' name='approve' value='" . htmlspecialchars($row['id']) . "'>Approve</button>
+                        <button type='submit' name='reject' value='" . htmlspecialchars($row['id']) . "'>Reject</button>
+                      </form>";
+                echo "</div><hr>";
+            }
+        } else {
+            echo "<p>You have no book requests.</p>";
+        }
+
+        // Trigger popup if request details are available
+        if ($requestDetails) {
+            echo "<script>
+                showPopup('" . addslashes($requestDetails['name']) . "', '" . addslashes($requestDetails['email']) . "');
+            </script>";
+        }
+        ?>
+    </div>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
+include 'db.php';
+$user_id = $_SESSION['user_id'];
+
+// Fetch user details from the database
+$sql = "SELECT name, email FROM users WHERE id = '$user_id'";
+$result = $conn->query($sql);
+$user = $result->fetch_assoc();
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Personal Details</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background-color: #1c1c1c;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: #333333;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+
+        .navbar a:hover {
+            background-color: #f4a261;
+            color: black;
+        }
+
+        .content {
+            background-color: rgb(72, 67, 62);
+            padding: 2rem;
+            margin: 2rem auto;
+            border-radius: 10px;
+            max-width: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .content h2 {
+            color: #f4a261;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .content p {
+            margin: 1rem 0;
+            font-size: 1.2rem;
+            line-height: 1.5;
+            color: #ffffff;
+        }
+
+        .content p strong {
+            color: #f4a261;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <a href="home.php">Home</a>
+        <a href="add_books.php">Add Books</a>
+        <a href="requests.php">Your Requests</a>
+        <a href="profile.php">Personal Details</a>
+        <a href="logout.php">Logout</a>
+    </div>
+
+    <div class="content">
+        <h2>Your Personal Details</h2>
+        <?php if ($user) { ?>
+            <p><strong>Name:</strong> <?php echo htmlspecialchars($user['name']); ?></p>
+            <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
+        <?php } else { ?>
+            <p>No details found for your account.</p>
+        <?php } ?>
+    </div>
+</body>
+</html>
